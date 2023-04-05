@@ -13,10 +13,12 @@ namespace GraphSprite
     public partial class Form1 : Form
     {
         private Rectangle Hero;
-        Image[] run_left,run_right,idle_;
+        Image[] run_left,run_right,idle_,att_l,att_r;
         private int FrameIndex = 0;
         readonly string AnimationPath = @"C:\Users\Nikita\Desktop\Animations\";
         Animation CurrentAnimation = Animation.idle;
+        string last_slide;
+        int AttackFramesLeft = 0;
 
         private const int Speed = 7, IdleTick=90, RunTick=55;
 
@@ -59,6 +61,20 @@ namespace GraphSprite
             {
                 idle_[i] = Image.FromFile(pathes[i]);
             }
+            //
+            att_l = new Image[4];
+            pathes = System.IO.Directory.GetFiles(AnimationPath + "\\left\\attack\\");
+            for (int i = 0; i < att_l.Length; i++)
+            {
+                att_l[i] = Image.FromFile(pathes[i]);
+            }
+            //
+            att_r = new Image[4];
+            pathes = System.IO.Directory.GetFiles(AnimationPath + "\\right\\attack\\");
+            for (int i = 0; i < att_r.Length; i++)
+            {
+                att_r[i] = Image.FromFile(pathes[i]);
+            }
         }
 
         private void KeyUpped(object sender, KeyEventArgs e)
@@ -77,6 +93,7 @@ namespace GraphSprite
                     break;
                 case "A":
                     CurrentAnimation = Animation.left;
+                    last_slide = "left";
                     Hero.X -= Speed;
                     break;
                 case "W":
@@ -85,7 +102,16 @@ namespace GraphSprite
                     break;
                 case "D":
                     CurrentAnimation = Animation.right;
+                    last_slide = "right";
                     Hero.X += Speed;
+                    break;
+                case "Space":
+                    if (AttackFramesLeft == 0)
+                    {
+                        timer_update.Interval = IdleTick;
+                        AttackFramesLeft = 4;
+                        Attack();
+                    }
                     break;
             }
             timer_update.Interval = RunTick;
@@ -95,7 +121,13 @@ namespace GraphSprite
         {
             if (FrameIndex == 8) FrameIndex = 0;
 
-            PlayAnimation();
+            if (AttackFramesLeft == 0)
+                PlayAnimation();
+            else
+            {
+                Attack();
+                AttackFramesLeft--;
+            }
 
             if (Hero.X > this.Width + 77)
                 Hero.X = -50;
@@ -108,6 +140,16 @@ namespace GraphSprite
                 Hero.Y = this.Height - 90;
 
             FrameIndex++;
+        }
+        private void Attack()
+        {
+            Bitmap bitmap = new Bitmap(this.Width, this.Height);
+            Graphics cf = Graphics.FromImage(bitmap);
+            cf.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            cf.DrawImage(background, new Rectangle(0, 0, this.Width, this.Height));
+            if (last_slide == "right") cf.DrawImage(att_r[4-AttackFramesLeft], new Rectangle(Hero.X, Hero.Y, Hero.Width + 10, Hero.Height + 10));
+            else cf.DrawImage(att_l[4-AttackFramesLeft], new Rectangle(Hero.X,Hero.Y,Hero.Width+10,Hero.Height+10));
+            this.BackgroundImage = bitmap;
         }
 
         private void PlayAnimation()
